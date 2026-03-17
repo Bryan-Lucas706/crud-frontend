@@ -21,21 +21,22 @@
         <form id="form" autocomplete="off">
           <div>
             <label for="name">Name</label> <br />
-            <input type="text" name="name" id="name" />
+            <input type="text" name="name" id="name" class="filledInput" />
           </div>
 
           <div>
             <label for="age">Age</label> <br />
-            <input type="number" name="age" id="age" step="1" />
+            <input type="number" name="age" id="age" step="1" class="filledInput" />
           </div>
 
           <div>
             <label for="email">Email</label> <br />
-            <input type="email" name="email" id="email" />
+            <input type="email" name="email" id="email" class="filledInput" />
           </div>
 
           <div id="container-btn">
-            <input type="submit" id="submitBtn" value="Create" />
+            <input type="submit" class="submitBtn" id="createBtn" value="Create" />
+            <input type="submit" class="submitBtn" id="updateBtn" value="Update" />
             <input type="reset" id="cancelBtn" value="Cancel" />
           </div>
         </form>

@@ -171,12 +171,12 @@ form {
     cursor: pointer;
   }
 
-  & #submitBtn {
+  & .submitBtn {
     background-color: var(--black);
     color: white;
   }
 
-  & #cancelBtn {
+  & #cancelBtn, #updateBtn {
     display: none;
   }
 }

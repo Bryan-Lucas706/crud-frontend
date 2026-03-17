@@ -3,6 +3,8 @@ export async function getUsers(apiUrl) {
   const data = await response.json();
 
   renderUsers(data.users);
+
+  return data.users; 
 }
 
 function renderUsers(users) {
@@ -11,6 +13,7 @@ function renderUsers(users) {
 
   if (users.length === 0) {
     usersContainer.innerHTML = '<p class="no-users">No users found</p>';
+    return;
   }
 
   users.forEach((user) => {
@@ -32,4 +35,3 @@ function renderUsers(users) {
     usersContainer.appendChild(card);
   });
 }
-

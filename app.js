@@ -1,14 +1,25 @@
 import { getUsers } from "/scripts/get.js";
 import { postUsers } from "./scripts/api/post.js";
 import { deleteUsers } from "./scripts/api/delete.js";
+import { putUsers } from "./scripts/api/update.js";
 
 const apiUrl = "http://localhost:8000/api/users";
-const submitBtn = document.getElementById("submitBtn");
+const createBtn = document.getElementById("createBtn");
+const updateBtn = document.getElementById("updateBtn");
 
-getUsers(apiUrl);
+let users = [];
+let currentUserId = null;
+let originalUser = null;
+
+async function loadUsers() {
+  users = await getUsers(apiUrl);
+}
+
+loadUsers();
 
 async function createUser(event) {
   event.preventDefault();
+
   let name = document.getElementById("name").value;
   let age = document.getElementById("age").value;
   let email = document.getElementById("email").value;
@@ -19,7 +30,19 @@ async function createUser(event) {
   document.getElementById("age").value = "";
   document.getElementById("email").value = "";
 
-  await getUsers(apiUrl);
+  await loadUsers();
+}
+
+async function editUser(event) {
+  event.preventDefault();
+
+  const btn = event.target.closest(".edit-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id; // Pega o ID do atributo data-id do botão
+  await putUsers(apiUrl, id, name, age, email);
+
+  await loadUsers();
 }
 
 async function deleteUserById(event) {
@@ -31,10 +54,11 @@ async function deleteUserById(event) {
 
   const id = btn.dataset.id; // Pega o ID do atributo data-id do botão
   await deleteUsers(apiUrl, id);
-  await getUsers(apiUrl);
+  await loadUsers(apiUrl);
 }
 
-submitBtn.addEventListener("click", createUser);
+createBtn.addEventListener("click", createUser);
+updateBtn.addEventListener("click", editUser);
 
-// Delega o evento para um elemento pai que já existe no DOM
 document.addEventListener("click", deleteUserById);
+document.addEventListener("click", editUser);
