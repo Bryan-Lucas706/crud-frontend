@@ -11,7 +11,7 @@ function renderUsers(users) {
 
   if (users.length === 0) {
     usersContainer.innerHTML = '<p class="no-users">No users found</p>';
-  } 
+  }
 
   users.forEach((user) => {
     const card = document.createElement("div");
@@ -24,11 +24,12 @@ function renderUsers(users) {
         <span><strong>Email: </strong>${user.email}</span>
       </div>
       <div class="change-container">  
-        <button class="edit" id="edit" type="submit">Edit</button>
-        <button class="delete" id="delete" type="submit">Delete</button>
+        <button class="edit-btn" data-id="${user.id}">Edit</button>
+        <button class="delete-btn" data-id="${user.id}">Delete</button>
       </div>
     `;
 
     usersContainer.appendChild(card);
   });
 }
+

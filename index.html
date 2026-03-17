@@ -13,12 +13,11 @@
     <main>
       <section>
         <h2>Users</h2>
-        <article id="users-container">
-
-        </article>
+        <article id="users-container"></article>
       </section>
       <section id="createUsers-container">
         <h2>Create User</h2>
+        <div id="error-msg">"error": Invalid request. Please check the provided parameters.</div>
         <form id="form" autocomplete="off">
           <div>
             <label for="name">Name</label> <br />
@@ -36,8 +35,8 @@
           </div>
 
           <div id="container-btn">
-            <input type="submit" id="submitBtn" value="Create"/>
-            <input type="reset" id="btn-cancel" value="Cancel" />
+            <input type="submit" id="submitBtn" value="Create" />
+            <input type="reset" id="cancelBtn" value="Cancel" />
           </div>
         </form>
       </section>

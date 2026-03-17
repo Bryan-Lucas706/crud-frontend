@@ -31,7 +31,7 @@ main {
   padding-top: 20px;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr 180px;
+  grid-template-rows: 1fr auto;
   grid-auto-rows: 1fr;
   gap: 20px;
 }
@@ -48,7 +48,7 @@ main {
 
 .card {
   min-height: 150px;
-  max-width: 260px;
+  width: 260px;
   min-width: 230px;
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -83,17 +83,22 @@ main {
     border: 1px solid var(--black);
     border-radius: 3px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: 0.4s;
   }
 
-  & .edit:focus {
+  & .edit-btn:hover {
     background-color: var(--black);
     color: white;
   }
 
-  & button.delete {
+  & .delete-btn {
     border-color: red;
     color: red;
+  }
+
+  & .delete-btn:hover{
+    background-color: red;
+    color: white;
   }
 }
 
@@ -107,6 +112,14 @@ section {
   background-color: white;
   border: 1px solid var(--border);
   border-radius: 5px;
+}
+
+#error-msg{
+  display: none;
+  background-color: #ffa6a6;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 form {
@@ -158,12 +171,12 @@ form {
     cursor: pointer;
   }
 
-  & #btn-submit {
+  & #submitBtn {
     background-color: var(--black);
     color: white;
   }
 
-  & #btn-cancel {
+  & #cancelBtn {
     display: none;
   }
 }
