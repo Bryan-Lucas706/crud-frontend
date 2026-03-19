@@ -117,7 +117,9 @@ section {
 
 #error-msg {
   display: none;
-  background-color: #ffa6a6;
+  background-color: #fab8b8;
+  border: 1px solid #c06262;
+  color: #412222;
   padding: 10px;
   border-radius: 10px;
   margin-bottom: 10px;
