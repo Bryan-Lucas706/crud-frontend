@@ -3,7 +3,7 @@ import { getUsers } from "../api/read.js";
 let usersCache = [];
 
 export function findUserById(id) {
-  return usersCache.find((user) => user.id === id);
+  return usersCache.find((user) => user.id === id); // Procura dentro de usersCache um usuario respectivo ao parametro
 }
 
 export async function renderUsers(apiUrl) {
@@ -12,18 +12,17 @@ export async function renderUsers(apiUrl) {
 
   const usersContainer = document.getElementById("users-container");
 
-  if (users.length === 0) {
+  if (users.length === 0) { // Se não existir usuario vai adicionar o <p>
     usersContainer.innerHTML = '<p class="no-users">No users found</p>';
     return;
   }
 
-  
-  usersContainer.innerHTML = "";
+  usersContainer.innerHTML = ""; // Limpa o container
 
-  users.forEach((user) => {
+  users.forEach((user) => { // Para cada usuario vai criar um card
     const card = document.createElement("div");
     card.classList.add(`user-card`);
-    card.id = user.id;
+    card.id = user.id; // Cada card tem um ID respectivo ao usuario
 
     card.innerHTML = `
       <div class="info-user">
@@ -37,6 +36,6 @@ export async function renderUsers(apiUrl) {
         </div>
     `;
 
-    usersContainer.appendChild(card);
+    usersContainer.appendChild(card); // Adiciona o card como filho de usersContainer
   });
 }

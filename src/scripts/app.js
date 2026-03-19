@@ -6,13 +6,11 @@ import { updateUser, patchUser } from "./api/update.js";
 const apiUrl = "http://localhost:8000/api/users";
 const usersContainer = document.getElementById("users-container");
 const form = document.getElementById("createUser");
-
-const errorMsg = document.getElementById("error-msg");
-
-// Referências do DOM:
 const formTitle = document.getElementById("form-title");
 const updateBtn = document.getElementById("submitBtn");
 const cancelBtn = document.getElementById("cancelBtn");
+
+const errorMsg = document.getElementById("error-msg");
 
 // Estado de edição:
 let editingId = null;

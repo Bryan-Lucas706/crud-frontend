@@ -185,7 +185,7 @@ form {
 
 @media screen and (max-width: 670px) {
   form {
-  flex-direction: column;
+    flex-direction: column;
   }
 
   .user-card {
