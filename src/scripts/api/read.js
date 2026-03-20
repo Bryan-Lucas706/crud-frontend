@@ -1,10 +1,9 @@
 export async function getUsers(apiUrl) {
-  const response = await fetch(apiUrl);
-  const data = await response.json(); // Converte o response em um objeto JavaScript
-
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to fetch users");
-  } 
-
-  return data.users;
+  try {
+    const response = await axios.get(apiUrl);
+    return response.data.users;
+  } catch (error) {
+    const message = error.response?.data?.error || "Failed to fetch users";
+    throw new Error(message);
+  }
 }
