@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo de Execução — CRUD API</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0f172a;--surface:#1e293b;--border:#334155;
+    --text:#e2e8f0;--muted:#94a3b8;--accent:#38bdf8;
+    --green:#4ade80;--yellow:#facc15;--red:#f87171;--purple:#a78bfa;
+    --orange:#fb923c;--pink:#f472b6;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+  header{text-align:center;padding:2.5rem 1rem 1rem;position:relative}
+  header h1{font-size:1.6rem;font-weight:700;letter-spacing:-.5px}
+  header p{color:var(--muted);font-size:.85rem;margin-top:.35rem}
+
+  .method-tabs{display:flex;justify-content:center;gap:.5rem;padding:1rem;flex-wrap:wrap}
+  .method-tab{
+    padding:.45rem 1.1rem;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--muted);cursor:pointer;font-size:.8rem;
+    font-weight:600;letter-spacing:.5px;transition:all .2s;user-select:none;
+  }
+  .method-tab:hover{border-color:var(--accent);color:var(--text)}
+  .method-tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .method-tab[data-method="GET"]{--c:var(--green)}
+  .method-tab[data-method="POST"]{--c:var(--yellow)}
+  .method-tab[data-method="PUT"]{--c:var(--orange)}
+  .method-tab[data-method="PATCH"]{--c:var(--purple)}
+  .method-tab[data-method="DELETE"]{--c:var(--red)}
+  .method-tab.active{background:var(--c);border-color:var(--c)}
+
+  .flow-container{
+    max-width:520px;margin:0 auto;padding:1rem 1.5rem 3rem;position:relative;
+  }
+
+  .flow-line{
+    position:absolute;left:50%;top:0;bottom:0;width:2px;
+    background:linear-gradient(to bottom,transparent,var(--border) 80px,var(--border) calc(100% - 80px),transparent);
+    transform:translateX(-1px);z-index:0;
+  }
+
+  .step{
+    position:relative;z-index:1;margin-bottom:1rem;
+    opacity:0;transform:translateY(18px);
+    transition:opacity .4s ease,transform .4s ease;
+  }
+  .step.visible{opacity:1;transform:translateY(0)}
+
+  .step-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:1rem 1.15rem;position:relative;overflow:hidden;
+    transition:border-color .25s,box-shadow .25s;
+  }
+  .step-card:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(56,189,248,.08)}
+
+  .step-card::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--step-color,var(--accent));border-radius:3px 0 0 3px;
+  }
+
+  .step-header{display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem}
+  .step-icon{
+    width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:.85rem;flex-shrink:0;
+    background:color-mix(in srgb,var(--step-color,var(--accent)) 15%,transparent);
+    color:var(--step-color,var(--accent));
+  }
+  .step-title{font-weight:600;font-size:.9rem}
+  .step-file{
+    font-size:.7rem;color:var(--muted);font-family:'Fira Code',monospace;
+    background:var(--bg);padding:.15rem .45rem;border-radius:4px;margin-left:auto;
+    white-space:nowrap;
+  }
+
+  .step-body{font-size:.78rem;color:var(--muted);line-height:1.55;padding-left:2.4rem}
+  .step-body code{
+    background:var(--bg);padding:.1rem .35rem;border-radius:3px;
+    font-family:'Fira Code',monospace;font-size:.72rem;color:var(--accent);
+  }
+
+  .arrow{
+    text-align:center;position:relative;z-index:1;height:18px;
+    display:flex;align-items:center;justify-content:center;color:var(--border);font-size:.7rem;
+  }
+
+  .step-detail{
+    margin-top:.5rem;padding:.55rem .7rem;background:var(--bg);border-radius:6px;
+    font-size:.72rem;font-family:'Fira Code',monospace;color:var(--green);
+    line-height:1.6;margin-left:2.4rem;white-space:pre-wrap;
+    border:1px solid color-mix(in srgb,var(--step-color,var(--accent)) 20%,transparent);
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height .35s ease,opacity .3s ease,margin-top .3s ease;
+  }
+  .step-detail.open{max-height:500px;opacity:1}
+
+  .toggle-detail{
+    display:inline-flex;align-items:center;gap:.3rem;
+    font-size:.68rem;color:var(--accent);cursor:pointer;margin-top:.35rem;
+    margin-left:2.4rem;user-select:none;transition:color .2s;
+  }
+  .toggle-detail:hover{color:var(--text)}
+  .toggle-detail svg{width:12px;height:12px;transition:transform .25s}
+  .toggle-detail.open svg{transform:rotate(90deg)}
+
+  .response-box{
+    margin-top:.5rem;padding:.6rem .8rem;border-radius:8px;
+    background:color-mix(in srgb,var(--green) 8%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--green) 25%,transparent);
+    margin-left:2.4rem;
+  }
+  .response-box .status{font-weight:700;font-size:.78rem;color:var(--green)}
+  .response-box pre{
+    font-size:.7rem;font-family:'Fira Code',monospace;color:var(--muted);
+    margin-top:.3rem;line-height:1.5;white-space:pre-wrap;
+  }
+
+  .legend{
+    display:flex;justify-content:center;gap:1.2rem;padding:.8rem;flex-wrap:wrap;
+    margin-top:-.5rem;margin-bottom:.5rem;
+  }
+  .legend-item{display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--muted)}
+  .legend-dot{width:8px;height:8px;border-radius:50%}
+
+  @media(max-width:560px){
+    .flow-container{padding:1rem}
+    .step-file{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Fluxo de Execução da API</h1>
+  <p>Do recebimento da requisição HTTP até o envio da resposta JSON</p>
+</header>
+
+<div class="method-tabs" id="tabs">
+  <div class="method-tab active" data-method="GET">GET</div>
+  <div class="method-tab" data-method="POST">POST</div>
+  <div class="method-tab" data-method="PUT">PUT</div>
+  <div class="method-tab" data-method="PATCH">PATCH</div>
+  <div class="method-tab" data-method="DELETE">DELETE</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Roteamento</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Controller</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Validação</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Serviço</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--pink)"></div> Dados</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Resposta</div>
+</div>
+
+<div class="flow-container">
+  <div class="flow-line"></div>
+  <div id="flow"></div>
+</div>
+
+<script>
+const flows = {
+  GET: [
+    {
+      icon: '&#9656;', title: 'Requisição HTTP chega', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'O servidor recebe <code>GET /api/users</code>. O PHP processa a requisição a partir do entry point.',
+      detail: `GET /api/users HTTP/1.1\nHost: localhost\nAccept: application/json`,
+    },
+    {
+      icon: '&#9881;', title: 'CORS & Headers', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Verifica se a <code>Origin</code> está na whitelist de <code>$allowedOrigins</code>. Se sim, adiciona headers CORS à resposta.',
+      detail: `$origin = $_SERVER['HTTP_ORIGIN'] ?? '';\n\nin_array($origin, $allowedOrigins) ?\n  header("Access-Control-Allow-Origin: $origin")\n  : null;\n\nheader('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');\nheader('Access-Control-Allow-Headers: Content-Type');`,
+    },
+    {
+      icon: '&#10147;', title: 'Roteamento por URI', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Usa <code>match($uri)</code> para direcionar <code>/api/users</code> ao arquivo <code>api.php</code>. URIs desconhecidas caem em <code>notFound()</code>.',
+      detail: `$uri = strtok($_SERVER['REQUEST_URI'], '?');\nmatch ($uri) {\n  '/api/users'    => require 'api.php',\n  '/docs'         => serveView(...),\n  '/openapi.json' => serveJson(...),\n  default         => notFound(),\n};\n\nfunction notFound(): void {\n  http_response_code(404);\n  echo json_encode(['error' => 'Not found']);\n}`,
+    },
+    {
+      icon: '&#8644;', title: 'Dispatch por método HTTP', file: 'api.php',
+      color: 'var(--accent)',
+      body: 'Identifica o método <code>GET</code> e chama <code>handleGet($dataFile)</code>. Métodos não suportados recebem <code>405</code>.',
+      detail: `$method = $_SERVER['REQUEST_METHOD'];\nmatch ($method) {\n  'GET'    => handleGet($dataFile),\n  'POST'   => handlePost($dataFile),\n  'PUT'    => handlePut($dataFile),\n  'PATCH'  => handlePatch($dataFile),\n  'DELETE' => handleDelete($dataFile),\n  default  => handleMethodNotAllowed(),\n};\n\nfunction handleMethodNotAllowed(): void {\n  http_response_code(405);\n  echo json_encode(['error' => 'Method not allowed']);\n}`,
+    },
+    {
+      icon: '&#9638;', title: 'Controller: handleGet()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'O controller chama o serviço <code>getAllUsers()</code> e prepara a resposta JSON.',
+      detail: `function handleGet(string $dataFile): void {\n  try {\n    echo json_encode(getAllUsers($dataFile));\n  } catch (\\Throwable $e) {\n    http_response_code(500);\n    echo json_encode(['error' => 'Internal server error']);\n  }\n}`,
+    },
+    {
+      icon: '&#9733;', title: 'Service: getAllUsers()', file: 'services.php',
+      color: 'var(--orange)',
+      body: 'Chama <code>loadData()</code> diretamente na camada de dados e retorna o array de usuários.',
+      detail: `function getAllUsers(string $dataFile): array {\n  $data = loadData($dataFile);\n  return ['users' => $data['users']];\n}`,
+    },
+    {
+      icon: '&#9776;', title: 'Data: loadData()', file: 'data.php',
+      color: 'var(--pink)',
+      body: 'Lê o arquivo <code>data.json</code>, decodifica o JSON e retorna o array completo de dados.',
+      detail: `function loadData(string $dataFile): array {\n  return json_decode(\n    file_get_contents($dataFile), true\n  );\n}`,
+    },
+    {
+      icon: '&#10003;', title: 'Resposta JSON', file: '',
+      color: 'var(--green)',
+      body: 'Retorna a lista de usuários com status <code>200 OK</code>.',
+      response: { status: '200 OK', body: '{\n  "users": [\n    { "name": "João", "age": 25,\n      "email": "joao@email.com", "id": 1 }\n  ]\n}' },
+    },
+  ],
+
+  POST: [
+    {
+      icon: '&#9656;', title: 'Requisição HTTP chega', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'O servidor recebe <code>POST /api/users</code> com corpo JSON contendo os dados do novo usuário.',
+      detail: `POST /api/users HTTP/1.1\nContent-Type: application/json\n\n{"name":"Ana","age":30,"email":"ana@email.com"}`,
+    },
+    {
+      icon: '&#9881;', title: 'CORS & Headers', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Verifica origem e adiciona headers CORS. Requisições <code>OPTIONS</code> (preflight) recebem <code>204</code>.',
+      detail: `$origin = $_SERVER['HTTP_ORIGIN'] ?? '';\n\nin_array($origin, $allowedOrigins) ?\n  header("Access-Control-Allow-Origin: $origin")\n  : null;\n\nif ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {\n  http_response_code(204);\n  exit;\n}`,
+    },
+    {
+      icon: '&#10147;', title: 'Roteamento por URI', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Direciona <code>/api/users</code> para <code>api.php</code> via <code>match($uri)</code>.',
+      detail: `$uri = strtok($_SERVER['REQUEST_URI'], '?');\nmatch ($uri) {\n  '/api/users'    => require 'api.php',\n  '/docs'         => serveView(...),\n  '/openapi.json' => serveJson(...),\n  default         => notFound(),\n};`,
+    },
+    {
+      icon: '&#8644;', title: 'Dispatch por método HTTP', file: 'api.php',
+      color: 'var(--accent)',
+      body: 'Identifica o método <code>POST</code> e chama <code>handlePost($dataFile)</code>.',
+      detail: `$method = $_SERVER['REQUEST_METHOD'];\nmatch ($method) {\n  'POST' => handlePost($dataFile),\n  ...\n};`,
+    },
+    {
+      icon: '&#9638;', title: 'Controller: handlePost()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Lê o corpo da requisição com <code>php://input</code>, decodifica o JSON e passa para o serviço via <code>respond()</code>.',
+      detail: `function handlePost(string $dataFile): void {\n  try {\n    $input = json_decode(\n      file_get_contents('php://input'), true\n    );\n    respond(createUser($dataFile, $input));\n  } catch (\\Throwable $e) {\n    http_response_code(500);\n    echo json_encode(['error' => 'Internal server error']);\n  }\n}`,
+    },
+    {
+      icon: '&#10004;', title: 'Validação dos campos', file: 'validation.php',
+      color: 'var(--yellow)',
+      body: 'Verifica campos obrigatórios (<code>name</code>, <code>age</code>, <code>email</code>) e valida formato, tamanho e faixa de valores.',
+      detail: `function validateRequiredFields(array $input, array $fields): ?string {\n  $missing = [];\n  foreach ($fields as $field) {\n    if (!isset($input[$field])) $missing[] = $field;\n  }\n  return !empty($missing)\n    ? implode(', ', $missing) . ' are required'\n    : null;\n}\n\nfunction validateUserFields(array $input): ?string {\n  // name: não vazio, max 100 chars\n  // age: numérico, entre 1-150\n  // email: FILTER_VALIDATE_EMAIL\n}`,
+    },
+    {
+      icon: '&#9733;', title: 'Service: createUser()', file: 'services.php',
+      color: 'var(--orange)',
+      body: 'Após validação, chama <code>insertUser()</code> para persistir o novo usuário.',
+      detail: `function createUser(string $dataFile, ?array $input): array {\n  if (!is_array($input)) {\n    return ['error' => 'Invalid JSON body', 'status' => 400];\n  }\n\n  $error = validateRequiredFields($input, ['name','age','email']);\n  if ($error) return ['error' => $error, 'status' => 400];\n\n  $error = validateUserFields($input);\n  if ($error) return ['error' => $error, 'status' => 400];\n\n  $user = insertUser($dataFile, [\n    'name'  => trim($input['name']),\n    'age'   => (int) $input['age'],\n    'email' => $input['email'],\n  ]);\n  return ['data' => $user, 'status' => 201];\n}`,
+    },
+    {
+      icon: '&#9776;', title: 'Data: insertUser()', file: 'data.php',
+      color: 'var(--pink)',
+      body: 'Gera um <code>id</code> a partir de <code>nextId</code>, incrementa o contador, adiciona o usuário ao array e salva no <code>data.json</code>.',
+      detail: `function insertUser(string $dataFile, array $user): array {\n  $data = loadData($dataFile);\n  $id = $data['nextId'] ?? 1;\n  $data['nextId'] = $id + 1;\n  $user['id'] = $id;\n  $data['users'][] = $user;\n  saveData($dataFile, $data);\n  return $user;\n}\n\nfunction saveData(string $dataFile, array $data): void {\n  file_put_contents($dataFile,\n    json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)\n  );\n}`,
+    },
+    {
+      icon: '&#9881;', title: 'respond()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Função auxiliar que define o <code>http_response_code</code> e envia o JSON de resposta ou de erro.',
+      detail: `function respond(array $result): void {\n  http_response_code($result['status']);\n\n  if (isset($result['error'])) {\n    echo json_encode(['error' => $result['error']]);\n  } else {\n    echo json_encode($result['data']);\n  }\n}`,
+    },
+    {
+      icon: '&#10003;', title: 'Resposta JSON', file: '',
+      color: 'var(--green)',
+      body: 'Retorna o usuário criado com status <code>201 Created</code>.',
+      response: { status: '201 Created', body: '{\n  "name": "Ana", "age": 30,\n  "email": "ana@email.com", "id": 2\n}' },
+    },
+  ],
+
+  PUT: [
+    {
+      icon: '&#9656;', title: 'Requisição HTTP chega', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'O servidor recebe <code>PUT /api/users?id=1</code> com todos os campos do usuário no corpo.',
+      detail: `PUT /api/users?id=1 HTTP/1.1\nContent-Type: application/json\n\n{"name":"João","age":26,"email":"joao@novo.com"}`,
+    },
+    {
+      icon: '&#9881;', title: 'CORS & Headers', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Verifica origem e aplica headers CORS.',
+      detail: `$origin = $_SERVER['HTTP_ORIGIN'] ?? '';\n\nin_array($origin, $allowedOrigins) ?\n  header("Access-Control-Allow-Origin: $origin")\n  : null;`,
+    },
+    {
+      icon: '&#10147;', title: 'Roteamento por URI', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Direciona para <code>api.php</code>. O query string <code>?id=1</code> é separado pelo <code>strtok</code>.',
+      detail: `$uri = strtok($_SERVER['REQUEST_URI'], '?');\n// $uri = '/api/users' (sem ?id=1)\nmatch ($uri) {\n  '/api/users' => require 'api.php',\n  ...\n};`,
+    },
+    {
+      icon: '&#8644;', title: 'Dispatch por método HTTP', file: 'api.php',
+      color: 'var(--accent)',
+      body: 'Identifica <code>PUT</code> e chama <code>handlePut($dataFile)</code>.',
+      detail: `$method = $_SERVER['REQUEST_METHOD'];\nmatch ($method) {\n  'PUT' => handlePut($dataFile),\n  ...\n};`,
+    },
+    {
+      icon: '&#9638;', title: 'Controller: handlePut()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Extrai o <code>id</code> do query string, lê o corpo JSON e chama o serviço via <code>respond()</code>.',
+      detail: `function handlePut(string $dataFile): void {\n  try {\n    $input = json_decode(\n      file_get_contents('php://input'), true\n    );\n    $id = isset($_GET['id'])\n      ? (int) $_GET['id'] : null;\n    respond(editUser($dataFile, $id, $input));\n  } catch (\\Throwable $e) {\n    http_response_code(500);\n    echo json_encode(['error' => 'Internal server error']);\n  }\n}`,
+    },
+    {
+      icon: '&#10004;', title: 'Validação completa', file: 'validation.php',
+      color: 'var(--yellow)',
+      body: 'Como é <code>PUT</code>, <strong>todos</strong> os campos são obrigatórios: <code>name</code>, <code>age</code> e <code>email</code>.',
+      detail: `// partial = false (padrão do editUser)\n$error = validateRequiredFields(\n  $input, ['name','age','email']\n);\nif ($error) return ['error' => $error, 'status' => 400];\n\n$error = validateUserFields($input);\nif ($error) return ['error' => $error, 'status' => 400];`,
+    },
+    {
+      icon: '&#9733;', title: 'Service: editUser()', file: 'services.php',
+      color: 'var(--orange)',
+      body: 'Filtra os campos permitidos e chama <code>updateUser()</code> para persistir as alterações.',
+      detail: `function editUser(string $dataFile, ?int $id, ?array $input,\n  bool $partial = false): array {\n  if ($id === null)\n    return ['error' => 'User id is required', 'status' => 400];\n  if (!is_array($input))\n    return ['error' => 'Invalid JSON body', 'status' => 400];\n\n  // validações (required fields + user fields) ...\n  $allowed = ['name', 'age', 'email'];\n  $fields = array_intersect_key($input, array_flip($allowed));\n  if (isset($fields['name'])) $fields['name'] = trim($fields['name']);\n  if (isset($fields['age']))  $fields['age'] = (int) $fields['age'];\n\n  $user = updateUser($dataFile, $id, $fields);\n  return $user === null\n    ? ['error' => 'User not found', 'status' => 404]\n    : ['data' => $user, 'status' => 200];\n}`,
+    },
+    {
+      icon: '&#9776;', title: 'Data: updateUser()', file: 'data.php',
+      color: 'var(--pink)',
+      body: 'Encontra o usuário pelo <code>id</code>, faz merge dos campos e salva no <code>data.json</code>.',
+      detail: `function updateUser(string $dataFile, int $id, array $fields): ?array {\n  $data = loadData($dataFile);\n  foreach ($data['users'] as $i => $user) {\n    if ($user['id'] === $id) {\n      $data['users'][$i] = array_merge($user, $fields);\n      saveData($dataFile, $data);\n      return $data['users'][$i];\n    }\n  }\n  return null;\n}`,
+    },
+    {
+      icon: '&#9881;', title: 'respond()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Define o <code>http_response_code</code> e envia o JSON de resposta ou de erro.',
+      detail: `function respond(array $result): void {\n  http_response_code($result['status']);\n\n  if (isset($result['error'])) {\n    echo json_encode(['error' => $result['error']]);\n  } else {\n    echo json_encode($result['data']);\n  }\n}`,
+    },
+    {
+      icon: '&#10003;', title: 'Resposta JSON', file: '',
+      color: 'var(--green)',
+      body: 'Retorna o usuário atualizado com status <code>200 OK</code>.',
+      response: { status: '200 OK', body: '{\n  "name": "João", "age": 26,\n  "email": "joao@novo.com", "id": 1\n}' },
+    },
+  ],
+
+  PATCH: [
+    {
+      icon: '&#9656;', title: 'Requisição HTTP chega', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'O servidor recebe <code>PATCH /api/users?id=1</code> com apenas os campos a alterar.',
+      detail: `PATCH /api/users?id=1 HTTP/1.1\nContent-Type: application/json\n\n{"age": 27}`,
+    },
+    {
+      icon: '&#9881;', title: 'CORS & Headers', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Verifica origem e aplica headers CORS.',
+      detail: `$origin = $_SERVER['HTTP_ORIGIN'] ?? '';\n\nin_array($origin, $allowedOrigins) ?\n  header("Access-Control-Allow-Origin: $origin")\n  : null;`,
+    },
+    {
+      icon: '&#10147;', title: 'Roteamento por URI', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Direciona para <code>api.php</code>.',
+      detail: `$uri = strtok($_SERVER['REQUEST_URI'], '?');\nmatch ($uri) {\n  '/api/users' => require 'api.php',\n  ...\n};`,
+    },
+    {
+      icon: '&#8644;', title: 'Dispatch por método HTTP', file: 'api.php',
+      color: 'var(--accent)',
+      body: 'Identifica <code>PATCH</code> e chama <code>handlePatch($dataFile)</code>.',
+      detail: `$method = $_SERVER['REQUEST_METHOD'];\nmatch ($method) {\n  'PATCH' => handlePatch($dataFile),\n  ...\n};`,
+    },
+    {
+      icon: '&#9638;', title: 'Controller: handlePatch()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Extrai o <code>id</code>, lê o corpo JSON e chama o serviço com <code>partial: true</code> via <code>respond()</code>.',
+      detail: `function handlePatch(string $dataFile): void {\n  try {\n    $input = json_decode(\n      file_get_contents('php://input'), true\n    );\n    $id = isset($_GET['id'])\n      ? (int) $_GET['id'] : null;\n    respond(editUser($dataFile, $id, $input,\n      partial: true));\n  } catch (\\Throwable $e) {\n    http_response_code(500);\n    echo json_encode(['error' => 'Internal server error']);\n  }\n}`,
+    },
+    {
+      icon: '&#10004;', title: 'Validação parcial', file: 'validation.php',
+      color: 'var(--yellow)',
+      body: 'Como é <code>PATCH</code>, valida <strong>apenas</strong> os campos que foram enviados. Campos ausentes são ignorados.',
+      detail: `// partial = true → pula validateRequiredFields\n// valida só os campos presentes:\n$error = validateUserFields($input);\n\nfunction validateUserFields(array $input): ?string {\n  // name: não vazio, max 100 chars\n  // age: is_numeric, entre 1-150\n  // email: filter_var FILTER_VALIDATE_EMAIL\n  return null; // se tudo ok\n}`,
+    },
+    {
+      icon: '&#9733;', title: 'Service: editUser(partial)', file: 'services.php',
+      color: 'var(--orange)',
+      body: 'Filtra campos permitidos e chama <code>updateUser()</code> para fazer merge parcial.',
+      detail: `// partial: true → não exige todos os campos\n$allowed = ['name', 'age', 'email'];\n$fields = array_intersect_key(\n  $input, array_flip($allowed)\n);\n// apenas {"age": 27} passa o filtro\n$user = updateUser($dataFile, $id, $fields);`,
+    },
+    {
+      icon: '&#9776;', title: 'Data: updateUser()', file: 'data.php',
+      color: 'var(--pink)',
+      body: 'Encontra o usuário, faz merge apenas dos campos enviados e salva.',
+      detail: `function updateUser(string $dataFile, int $id, array $fields): ?array {\n  $data = loadData($dataFile);\n  foreach ($data['users'] as $i => $user) {\n    if ($user['id'] === $id) {\n      // merge parcial: só "age" muda\n      $data['users'][$i] = array_merge($user, $fields);\n      saveData($dataFile, $data);\n      return $data['users'][$i];\n    }\n  }\n  return null;\n}`,
+    },
+    {
+      icon: '&#9881;', title: 'respond()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Define o <code>http_response_code</code> e envia o JSON de resposta ou de erro.',
+      detail: `function respond(array $result): void {\n  http_response_code($result['status']);\n\n  if (isset($result['error'])) {\n    echo json_encode(['error' => $result['error']]);\n  } else {\n    echo json_encode($result['data']);\n  }\n}`,
+    },
+    {
+      icon: '&#10003;', title: 'Resposta JSON', file: '',
+      color: 'var(--green)',
+      body: 'Retorna o usuário com o campo atualizado e status <code>200 OK</code>.',
+      response: { status: '200 OK', body: '{\n  "name": "João", "age": 27,\n  "email": "joao@email.com", "id": 1\n}' },
+    },
+  ],
+
+  DELETE: [
+    {
+      icon: '&#9656;', title: 'Requisição HTTP chega', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'O servidor recebe <code>DELETE /api/users?id=1</code>. Não há corpo na requisição.',
+      detail: `DELETE /api/users?id=1 HTTP/1.1\nHost: localhost`,
+    },
+    {
+      icon: '&#9881;', title: 'CORS & Headers', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Verifica origem e aplica headers CORS.',
+      detail: `$origin = $_SERVER['HTTP_ORIGIN'] ?? '';\n\nin_array($origin, $allowedOrigins) ?\n  header("Access-Control-Allow-Origin: $origin")\n  : null;`,
+    },
+    {
+      icon: '&#10147;', title: 'Roteamento por URI', file: 'index.php',
+      color: 'var(--accent)',
+      body: 'Direciona para <code>api.php</code>.',
+      detail: `$uri = strtok($_SERVER['REQUEST_URI'], '?');\nmatch ($uri) {\n  '/api/users' => require 'api.php',\n  ...\n};`,
+    },
+    {
+      icon: '&#8644;', title: 'Dispatch por método HTTP', file: 'api.php',
+      color: 'var(--accent)',
+      body: 'Identifica <code>DELETE</code> e chama <code>handleDelete($dataFile)</code>.',
+      detail: `$method = $_SERVER['REQUEST_METHOD'];\nmatch ($method) {\n  'DELETE' => handleDelete($dataFile),\n  ...\n};`,
+    },
+    {
+      icon: '&#9638;', title: 'Controller: handleDelete()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Extrai o <code>id</code> do query string e chama o serviço <code>removeUser()</code> via <code>respond()</code>.',
+      detail: `function handleDelete(string $dataFile): void {\n  try {\n    $id = isset($_GET['id'])\n      ? (int) $_GET['id'] : null;\n    respond(removeUser($dataFile, $id));\n  } catch (\\Throwable $e) {\n    http_response_code(500);\n    echo json_encode(['error' => 'Internal server error']);\n  }\n}`,
+    },
+    {
+      icon: '&#9733;', title: 'Service: removeUser()', file: 'services.php',
+      color: 'var(--orange)',
+      body: 'Valida que o <code>id</code> foi fornecido e chama <code>deleteUser()</code> na camada de dados.',
+      detail: `function removeUser(string $dataFile, ?int $id): array {\n  if ($id === null) {\n    return ['error' => 'User id is required',\n            'status' => 400];\n  }\n  $user = deleteUser($dataFile, $id);\n  if ($user === null) {\n    return ['error' => 'User not found', 'status' => 404];\n  }\n  return ['data' => ['deleted' => $user],\n          'status' => 200];\n}`,
+    },
+    {
+      icon: '&#9776;', title: 'Data: deleteUser()', file: 'data.php',
+      color: 'var(--pink)',
+      body: 'Encontra o usuário pelo <code>id</code>, remove do array com <code>array_splice</code> e salva o <code>data.json</code> atualizado.',
+      detail: `function deleteUser(string $dataFile, int $id): ?array {\n  $data = loadData($dataFile);\n  foreach ($data['users'] as $i => $user) {\n    if ($user['id'] === $id) {\n      array_splice($data['users'], $i, 1);\n      saveData($dataFile, $data);\n      return $user;\n    }\n  }\n  return null;\n}`,
+    },
+    {
+      icon: '&#9881;', title: 'respond()', file: 'controllers.php',
+      color: 'var(--purple)',
+      body: 'Define o <code>http_response_code</code> e envia o JSON de resposta ou de erro.',
+      detail: `function respond(array $result): void {\n  http_response_code($result['status']);\n\n  if (isset($result['error'])) {\n    echo json_encode(['error' => $result['error']]);\n  } else {\n    echo json_encode($result['data']);\n  }\n}`,
+    },
+    {
+      icon: '&#10003;', title: 'Resposta JSON', file: '',
+      color: 'var(--green)',
+      body: 'Retorna o objeto deletado com status <code>200 OK</code>.',
+      response: { status: '200 OK', body: '{\n  "deleted": {\n    "name": "João", "age": 25,\n    "email": "joao@email.com", "id": 1\n  }\n}' },
+    },
+  ],
+};
+
+const flowEl = document.getElementById('flow');
+const tabs = document.querySelectorAll('.method-tab');
+let current = 'GET';
+
+function render(method) {
+  const steps = flows[method];
+  flowEl.innerHTML = '';
+
+  steps.forEach((s, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('div');
+      arrow.className = 'arrow';
+      arrow.innerHTML = '&#9660;';
+      flowEl.appendChild(arrow);
+    }
+
+    const div = document.createElement('div');
+    div.className = 'step';
+    div.style.transitionDelay = `${i * 70}ms`;
+
+    let inner = `
+      <div class="step-card" style="--step-color:${s.color}">
+        <div class="step-header">
+          <div class="step-icon">${s.icon}</div>
+          <div class="step-title">${s.title}</div>
+          ${s.file ? `<div class="step-file">${s.file}</div>` : ''}
+        </div>
+        <div class="step-body">${s.body}</div>`;
+
+    if (s.detail) {
+      const uid = `detail-${method}-${i}`;
+      inner += `
+        <div class="toggle-detail" onclick="toggleDetail('${uid}',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+          ver código
+        </div>
+        <div class="step-detail" id="${uid}"><span style="color:var(--muted)">${escHtml(s.detail)}</span></div>`;
+    }
+
+    if (s.response) {
+      inner += `
+        <div class="response-box">
+          <div class="status">${s.response.status}</div>
+          <pre>${escHtml(s.response.body)}</pre>
+        </div>`;
+    }
+
+    inner += '</div>';
+    div.innerHTML = inner;
+    flowEl.appendChild(div);
+  });
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.step').forEach(el => el.classList.add('visible'));
+    });
+  });
+}
+
+function toggleDetail(id, btn) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    current = tab.dataset.method;
+    render(current);
+  });
+});
+
+render('GET');
+</script>
+</body>
+</html>
